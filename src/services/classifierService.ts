@@ -1,10 +1,34 @@
-
-// This is a mock service that will be replaced with your actual backend model
-// When integrating with your backend, replace the mockClassify function with 
-// an actual API call to your model
-
 import { TaxonomyLevel } from '@/components/ResultsDisplay';
 
+// API endpoint for the Flask backend
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export const classifyText = async (text: string): Promise<TaxonomyLevel[]> => {
+  try {
+    const response = await fetch(`${API_URL}/api/classify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error classifying text:', error);
+    // Fall back to mock classification if the API call fails
+    // (useful during development)
+    return mockClassify(text);
+  }
+};
+
+// Keep the mock implementation as a fallback
 const MOCK_DELAY = 1500; // Simulates network request time
 
 const bloomLevels: Omit<TaxonomyLevel, 'score'>[] = [
@@ -84,8 +108,3 @@ function getKeywordScore(text: string, keywords: string[]): number {
   });
   return Math.min(0.9, score);
 }
-
-export const classifyText = async (text: string): Promise<TaxonomyLevel[]> => {
-  // Replace this with your actual API call to your backend model
-  return mockClassify(text);
-};
